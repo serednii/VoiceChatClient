@@ -1,11 +1,11 @@
 
 import './App.css';
-import VoiceChat from './VoiceChat';
+import VoiceChatNew from './VoiceChatNew';
 
 function App() {
   return (
     <div className="App">
-      <VoiceChat />
+      <VoiceChatNew />
     </div>
   );
 }
