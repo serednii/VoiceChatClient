@@ -14,33 +14,67 @@ const VoiceChat = () => {
       "https://voicechatserver-production.up.railway.app/"
     );
     // voicechatserver - production.up.railway.app;
-    ws.current.onmessage = async ({ data }) => {
-      try {
-        // Перевірка, чи data є об'єктом Blob
-        if (data instanceof Blob) {
-          data = await data.text(); // Перетворення Blob на текст
-        }
+    // ws.current.onmessage = async ({ data }) => {
+    //   try {
+    //     // Перевірка, чи data є об'єктом Blob
+    //     if (data instanceof Blob) {
+    //       data = await data.text(); // Перетворення Blob на текст
+    //     }
 
-        const message = JSON.parse(data); // Парсинг JSON
-        // Далі обробка повідомлення
-        if (message.type === "offer") {
+    //     const message = JSON.parse(data); // Парсинг JSON
+    //     // Далі обробка повідомлення
+    //     if (message.type === "offer") {
+    //       await peerConnection.current.setRemoteDescription(
+    //         new RTCSessionDescription(message.data)
+    //       );
+    //       const answer = await peerConnection.current.createAnswer();
+    //       await peerConnection.current.setLocalDescription(answer);
+    //       ws.current.send(JSON.stringify({ type: "answer", data: answer }));
+    //     } else if (message.type === "answer") {
+    //       await peerConnection.current.setRemoteDescription(
+    //         new RTCSessionDescription(message.data)
+    //       );
+    //     } else if (message.type === "candidate") {
+    //       await peerConnection.current.addIceCandidate(
+    //         new RTCIceCandidate(message.data)
+    //       );
+    //     }
+    //   } catch (error) {
+    //     console.error("Помилка обробки повідомлення:", error);
+    //   }
+    // };
+
+    ws.current.onmessage = async ({ data }) => {
+      const message = JSON.parse(data);
+
+      if (message.type === "offer") {
+        // Потрібно додати перевірку перед setRemoteDescription
+        if (peerConnection.current.signalingState === "stable") {
           await peerConnection.current.setRemoteDescription(
-            new RTCSessionDescription(message.data)
+            new RTCSessionDescription(message)
           );
           const answer = await peerConnection.current.createAnswer();
           await peerConnection.current.setLocalDescription(answer);
           ws.current.send(JSON.stringify({ type: "answer", data: answer }));
-        } else if (message.type === "answer") {
+        } else {
+          console.error("PeerConnection не в стані 'stable' для обробки offer");
+        }
+      } else if (message.type === "answer") {
+        // Аналогічно перевіряємо для answer
+        if (peerConnection.current.signalingState === "have-local-offer") {
           await peerConnection.current.setRemoteDescription(
-            new RTCSessionDescription(message.data)
+            new RTCSessionDescription(message)
           );
-        } else if (message.type === "candidate") {
-          await peerConnection.current.addIceCandidate(
-            new RTCIceCandidate(message.data)
+        } else {
+          console.error(
+            "PeerConnection не в правильному стані для обробки answer"
           );
         }
-      } catch (error) {
-        console.error("Помилка обробки повідомлення:", error);
+      } else if (message.type === "candidate") {
+        // Обробка ICE кандидатів
+        await peerConnection.current.addIceCandidate(
+          new RTCIceCandidate(message.data)
+        );
       }
     };
 
