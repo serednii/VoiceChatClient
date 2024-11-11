@@ -18,4 +18,4 @@ COPY . .
 EXPOSE $PORT
 
 # Запустіть додаток
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
