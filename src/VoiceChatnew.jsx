@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import io from "socket.io-client";
 import SimplePeer from "simple-peer";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://voicechatserver-production.up.railway.app/");
 
 const VoiceChat = () => {
   const [stream, setStream] = useState(null);
