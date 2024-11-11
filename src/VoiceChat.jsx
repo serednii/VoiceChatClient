@@ -15,45 +15,57 @@ const VoiceChat = () => {
     );
 
     ws.current.onmessage = async ({ data }) => {
-        try {
-          // Перевірка, чи data є об'єктом Blob
-          if (data instanceof Blob) {
-            data = await data.text(); // Перетворення Blob на текст
-          }
-      
-          // Парсинг JSON
-          const message = JSON.parse(data);
-      
-          // Обробка типів повідомлень
-          if (message.type === "offer") {
-            if (peerConnection.current.signalingState === "stable") {
-              await peerConnection.current.setRemoteDescription(
-                new RTCSessionDescription(message.data)
-              );
-              const answer = await peerConnection.current.createAnswer();
-              await peerConnection.current.setLocalDescription(answer);
-              ws.current.send(JSON.stringify({ type: "answer", data: answer }));
-            } else {
-              console.error("PeerConnection не в стані 'stable' для обробки offer");
-            }
-          } else if (message.type === "answer") {
-            if (peerConnection.current.signalingState === "have-local-offer") {
-              await peerConnection.current.setRemoteDescription(
-                new RTCSessionDescription(message.data)
-              );
-            } else {
-              console.error("PeerConnection не в правильному стані для обробки answer");
-            }
-          } else if (message.type === "candidate") {
-            await peerConnection.current.addIceCandidate(
-              new RTCIceCandidate(message.data)
+      try {
+        // Перевірка, чи data є об'єктом Blob
+        if (data instanceof Blob) {
+          data = await data.text(); // Перетворення Blob на текст
+        }
+
+        // Парсинг JSON
+        const message = JSON.parse(data);
+
+        // Обробка типів повідомлень
+        if (message.type === "offer") {
+          if (
+            peerConnection.current.signalingState === "stable" ||
+            peerConnection.current.signalingState === "have-local-offer"
+          ) {
+            await peerConnection.current.setRemoteDescription(
+              new RTCSessionDescription(message.data)
+            );
+            const answer = await peerConnection.current.createAnswer();
+            await peerConnection.current.setLocalDescription(answer);
+            ws.current.send(JSON.stringify({ type: "answer", data: answer }));
+          } else {
+            console.error(
+              "PeerConnection не в правильному стані для обробки offer, стан:",
+              peerConnection.current.signalingState
             );
           }
-        } catch (error) {
-          console.error("Помилка обробки повідомлення:", error);
+        } else if (message.type === "answer") {
+          if (
+            peerConnection.current.signalingState === "have-local-offer" ||
+            peerConnection.current.signalingState === "stable"
+          ) {
+            await peerConnection.current.setRemoteDescription(
+              new RTCSessionDescription(message.data)
+            );
+          } else {
+            console.error(
+              "PeerConnection не в правильному стані для обробки answer, стан:",
+              peerConnection.current.signalingState
+            );
+          }
+        } else if (message.type === "candidate") {
+          await peerConnection.current.addIceCandidate(
+            new RTCIceCandidate(message.data)
+          );
         }
-      };
-      
+      } catch (error) {
+        console.error("Помилка обробки повідомлення:", error);
+      }
+    };
+
     // voicechatserver - production.up.railway.app;
     // ws.current.onmessage = async ({ data }) => {
     //   try {
